@@ -61,6 +61,7 @@ public class Server implements IServer {
 		try {
 			var urlOverrides:String = Scratch.app.loaderInfo.parameters['urlOverrides'];
 			if (urlOverrides) overrideURLs(by.blooddy.crypto.serialization.JSON.decode(urlOverrides));
+			
 		} catch (e:*) {
 		}
 	}
@@ -136,7 +137,7 @@ public class Server implements IServer {
 			
 			//安全策略，解决无法从本地载入
 //			var policyFileURL:String = url.substr(0, urlPathStart) + '/crossdomain.xml?cb=' + Math.random();
-			var policyFileURL:String ='crossdomain.xml?cb=' + Math.random();
+			var policyFileURL:String ='./crossdomain.xml?cb=' + Math.random();
 			Security.loadPolicyFile(policyFileURL);
 			Scratch.app.log(LogLevel.WARNING, 'Reloading policy file', {policy: policyFileURL, initiator: url});
 		}

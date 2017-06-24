@@ -18,16 +18,21 @@
  */
 
 package ui {
+	import assets.Resources;
+	
+	import blocks.*;
+	
 	import flash.display.*;
 	import flash.events.*;
 	import flash.geom.*;
-	import flash.text.*;
 	import flash.net.*;
-	import assets.Resources;
-	import blocks.*;
-	import uiwidgets.*;
-	import util.*;
+	import flash.text.*;
+	
 	import translation.Translator;
+	
+	import uiwidgets.*;
+	
+	import util.*;
 
 public class SharingSpecEditor extends Sprite {
 
@@ -44,14 +49,14 @@ public class SharingSpecEditor extends Sprite {
 	private var slotColor:int = 0xBBBDBF;
 	private const labelColor:int = 0x8738bf; // 0x6c36b3; // 0x9c35b3;
 
-	public function SharingSpecEditor() {
+	public function SharingSpecEditor(url:String='') {
 		addChild(base = new Shape());
 		setWidthHeight(400, 260);
 
-		addChild(playLabel = makeLabel('To play your video, download and install the',14));
-		addChild(linkLabel = makeLinkLabel('VLC media player.',14,"http://www.videolan.org/vlc/index.html"));
-		addChild(faqLabel = makeLinkLabel('Questions?',14,"https://scratch.mit.edu/info/faq/"));
-		addChild(shareLabel = makeLabel('You can also share your video with others to let them see it!',14));
+		addChild(playLabel = makeLabel('视频已经保存到服务器啦\n',14));
+		addChild(linkLabel = makeLinkLabel('查看我的所有视频',14,"http://s.213.name/video/index.html"));
+		addChild(faqLabel = makeLinkLabel('点击查看分享',14,"../"+url));
+		addChild(shareLabel = makeLabel('您可以分享到朋友圈或空间炫耀一下o(∩_∩)o',14));
 		addChild(shareImage = Resources.createDO("videoShare"));
 		var h:Number = 160/shareImage.width*shareImage.height;
 		shareImage.width = 160;

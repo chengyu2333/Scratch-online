@@ -76,7 +76,8 @@ token=md5 ('用户id' + '当前时间' +'密钥')
 |ishw|get|int|是否是作业1是，0否|
 
 获取视频数据代码参考
-
+需要在php.ini中设置
+always_populate_raw_post_data
 `
     $video =  $GLOBALS[HTTP_RAW_POST_DATA];
     if(empty($video)) {

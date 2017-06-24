@@ -27,7 +27,7 @@ import blocks.Block;
 import blocks.BlockArg;
 
 import com.rainbowcreatures.swf.*;
-
+import by.blooddy.crypto.serialization.JSON;
 import extensions.ExtensionManager;
 
 import flash.display.*;
@@ -526,29 +526,27 @@ public class ScratchRuntime {
 		if (event.code == "encoded")
 		{
 			video = myEncoder.getVideo();
-			DialogBox.close("encode finish",String(video.length),null,"ok",app.stage,null,null,null,false);
-			
-			//开始上传
-			//			this.uploader.uploadFile(this.fileUUID, _loc_2, "/tmp/recordings/");
-			
-			////		保存视频
 			function saveFile():void {
-				var url:String = "http://233.213.name/upload.php";
+				
+				var url:String = "http://localhost/frontend/web/index.php?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&type=0&filename="+escape(app.stagePane.info.name);
 				var requestData:URLRequest = new URLRequest(url); 
 				var loader:URLLoader = new URLLoader(); 
 				requestData.data = video;
 				requestData.method = URLRequestMethod.POST;
 				requestData.contentType = "application/octet-stream"; 
-				var urlvariables:URLVariables = new URLVariables(); 
-				//urlvariables.cc = "12312hahah3123"; 
-				//requestData.data = urlvariables;
 				loader.load(requestData);
+				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
+					var response:String = by.blooddy.crypto.serialization.JSON.decode(loader.data).url;
+					Scratch.app.log(LogLevel.INFO,'上传完成',{data:response});
+					var specEditor:SharingSpecEditor = new SharingSpecEditor(response);
+					DialogBox.close("分享你的视频",null,specEditor,"关闭");
+				});
+				
+				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
 				
 				var file:FileReference = new FileReference();
 				file.save(video, "movie.mp4");
-				//Scratch.app.log(LogLevel.TRACK, "Video downloaded", {projectID: app.projectID, seconds: roundToTens(seconds), megabytes: roundToTens(video.length/1000000)});
-				var specEditor:SharingSpecEditor = new SharingSpecEditor();
-				DialogBox.close("分享你的视频","projectID: "+String(app.projectID),specEditor,"关闭");
+				
 			    releaseVideo(false);
 	        }
 			//		释放视频
@@ -557,7 +555,7 @@ public class ScratchRuntime {
 	            video = null;
 			}
 	
-			DialogBox.close("Video Finished!","To save, click the button below.",null,"Save and Download",app.stage,saveFile,releaseVideo,null,true);
+			DialogBox.close("录制完成","点击按钮保存到服务器并下载",null,"保存并下载",app.stage,saveFile,releaseVideo,null,true);
 		}
 	}
 	
@@ -615,24 +613,8 @@ public class ScratchRuntime {
 		var video:ByteArray;
 		video = baFlvEncoder.byteArray;
 		baFlvEncoder.kill();
-		
-////		保存视频
-//		function saveFile():void {
-//			var file:FileReference = new FileReference();
-//			file.save(video, "movie.mp4");
-			Scratch.app.log(LogLevel.TRACK, "Video downloaded", {projectID: app.projectID, seconds: roundToTens(seconds), megabytes: roundToTens(video.length/1000000)});
-//			var specEditor:SharingSpecEditor = new SharingSpecEditor();
-//			DialogBox.close("Playing and Sharing Your Video",null,specEditor,"Back to Scratch");
-//		    releaseVideo(false);
-//        }
-////		释放视频
-//		function releaseVideo(log:Boolean = true):void {
-//			if (log) Scratch.app.log(LogLevel.TRACK, "Video canceled", {projectID: app.projectID, seconds: roundToTens(seconds), megabytes: roundToTens(video.length/1000000)});
-//            video = null;
-//		}
-//		DialogBox.close("Video Finished!","To save, click the button below.",null,"Save and Download",app.stage,saveFile,releaseVideo,null,true);
+		Scratch.app.log(LogLevel.TRACK, "Video downloaded", {projectID: app.projectID, seconds: roundToTens(seconds), megabytes: roundToTens(video.length/1000000)});
 		myEncoder.finish();
-//		var me:ScratchRuntime;
 	}
 	
 	private function roundToTens(x:Number):Number {

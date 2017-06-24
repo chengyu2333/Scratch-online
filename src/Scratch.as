@@ -25,6 +25,8 @@
 package {
 import blocks.*;
 
+import by.blooddy.crypto.serialization.JSON;
+
 import com.adobe.utils.StringUtil;
 import com.rainbowcreatures.swf.*;
 
@@ -36,14 +38,7 @@ import flash.events.*;
 import flash.external.ExternalInterface;
 import flash.geom.Point;
 import flash.geom.Rectangle;
-import flash.net.FileFilter;
-import flash.net.FileReference;
-import flash.net.FileReferenceList;
-import flash.net.LocalConnection;
-import flash.net.URLLoader;
-import flash.net.URLLoaderDataFormat;
-import flash.net.URLRequest;
-import flash.net.navigateToURL;
+import flash.net.*;
 import flash.system.*;
 import flash.text.*;
 import flash.utils.*;
@@ -134,6 +129,10 @@ public class Scratch extends Sprite {
 	public var imagesPart:ImagesPart;
 	public var soundsPart:SoundsPart;
 	public const tipsBarClosedWidth:int = 17;
+	
+	//用户信息
+	public var user_id:String="";
+	public var user_token:String="";
 
 	public var logger:Log = new Log(16);
 
@@ -213,20 +212,25 @@ public class Scratch extends Sprite {
 		stage.addEventListener(Event.RESIZE, onResize);
 
 		setEditMode(startInEditMode());
-		//only player mode
+		//小窗口模式
 		 if (loaderInfo.parameters["showOnly"])
-	            	{
-	          	      setEditMode(loaderInfo.parameters["showOnly"] != "true");
-	         	 }
-	           	 if (editMode)
-	           	 {
-	           	     runtime.installNewProject();
-	          	  }
-	          	  else
-	          	  {
-	          	      runtime.installEmptyProject();
-	          	  }
-
+	    {
+	        setEditMode(loaderInfo.parameters["showOnly"] != "true");
+	    }
+		 //是否为编辑模式
+	    if (editMode)
+	    {
+	    	runtime.installNewProject();
+	    }
+	    else
+	    {
+	       runtime.installEmptyProject();
+	    }
+		//读取用户信息
+		if (loaderInfo.parameters["user_id"]){
+			user_id = loaderInfo.parameters["user_id"];
+			user_token = loaderInfo.parameters["user_token"];
+		}
 		// install project before calling fixLayout()
 		if (editMode) runtime.installNewProject();
 		else runtime.installEmptyProject();
@@ -241,7 +245,38 @@ public class Scratch extends Sprite {
 		
 		Translator.setLanguage("zh-cn");
 		languageChanged = true;
+		
+		
+		setProjectName('未命名');
+		stagePane.info.name = "未命名";
+		//初始化项目
+		var project_url:String = loaderInfo.parameters["project"];
+		log(LogLevel.DEBUG,'init project',{project:project_url});
+		
+//		if(project_url!="undefined"&&project_url!=""){
+//			log(LogLevel.DEBUG,'init project',{project:project_url});
+//			loadSingleGithubURL(project_url);
+//		}
+//		
+		
 	}
+	
+	
+	
+	
+	//保存截屏
+	private function saveScreenshot() : void
+	{
+//		var _loc_1:* = new BitmapData(this.width, this.height, true, 0);
+//		_loc_1.draw(this);
+//		var _loc_2:* = new JPGEncoder(50);
+//		var _loc_3:* = _loc_2.encode(_loc_1);
+//		var _loc_4:* = new OSSUploader();
+//		var _loc_5:* = UIDUtil.createUID();
+//		_loc_4.uploadOneFile(_loc_5, _loc_3, "tmp/tmpfiles/", ".jpg", "h:screenshot");
+//		return;
+	}
+	
 	//预加载编码模块
 	private function preloadEncoder() : void
 	{
@@ -266,7 +301,7 @@ public class Scratch extends Sprite {
 		addExternalCallback('ASextensionCallDone', extensionManager.callCompleted);
 		addExternalCallback('ASextensionReporterDone', extensionManager.reporterCompleted);
 		addExternalCallback('AScreateNewProject', createNewProjectScratchX);
-//		addExternalCallback("loadProject", loadSingleGithubURL);
+		addExternalCallback("loadProject", loadSingleGithubURL);
 
 		if (isExtensionDevMode) {
 			addExternalCallback('ASloadGithubURL', loadGithubURL);
@@ -282,10 +317,12 @@ public class Scratch extends Sprite {
 			});
 		}
 	}
+	
+
 	//在线加载项目
 	private function loadSingleGithubURL(url:String):void {
+		log(LogLevel.DEBUG,'尝试载入网络项目',{url:url});
 		url = StringUtil.trim(unescape(url));
-
 		function handleComplete(e:Event):void {
 			runtime.installProjectFromData(sbxLoader.data);
 			if (StringUtil.trim(projectName()).length == 0) {
@@ -1108,14 +1145,21 @@ public class Scratch extends Sprite {
 
 	
 	protected function addFileMenuItems(b:*, m:Menu):void {
+		
 		m.addItem('从本地加载项目', runtime.selectProjectFile);
 		m.addItem('保存项目到本地', exportProjectToFile);
+		m.addLine();
+		m.addItem('加载项目',loadProject);
+		m.addItem('保存项目',saveProject);
+		m.addLine();
+		
 		m.addItem('重命名项目',changeProjectTitle);
+		
 		
 		if (runtime.recording || runtime.ready==ReadyLabel.COUNTDOWN || runtime.ready==ReadyLabel.READY) {
 			m.addItem('停止录像', runtime.stopVideo);
 		} else {
-			m.addItem('录像/交作业', runtime.exportToVideo);
+			m.addItem('录像|交作业', runtime.exportToVideo);
 		}
 		if (canUndoRevert()) {
 			m.addLine();
@@ -1124,7 +1168,7 @@ public class Scratch extends Sprite {
 			m.addLine();
 			m.addItem('Revert', revertToOriginalProject);
 		}
-
+		
 		if (b.lastEvent.shiftKey) {
 			m.addLine();
 			m.addItem('保存项目摘要', saveSummary);
@@ -1208,7 +1252,60 @@ public class Scratch extends Sprite {
 			externalCallArray(jsCallback);
 		});
 	}
+	//加载项目
+	public function loadProject():void{
+		
+		function load(dialog:DialogBox):void {
+			var url:String = dialog.getField('url');
+			loadSingleGithubURL(url);
+		}
+		var d:DialogBox = new DialogBox(load);
+		d.addTitle('从URL加载项目');
+		d.addField('url', 500);
+		d.addAcceptCancelButtons('确定');
+		d.showOnStage(app.stage);
+		
+	}
+	//保存项目
+	public function saveProject(fromJS:Boolean = false, saveCallback:Function = null):void{
+		
+		Scratch.app.log(LogLevel.TRACK, "正在上传项目", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
+		
+		function squeakSoundsConverted():void {
+			scriptsPane.saveScripts(false);
+			var projectType:String = extensionManager.hasExperimentalExtensions() ? '.sbx' : '.sb2';
+			var defaultName:String = StringUtil.trim(projectName());
+			defaultName = ((defaultName.length > 0) ? defaultName : 'project') + projectType;
+			var zipData:ByteArray = projIO.encodeProjectAsZipFile(stagePane);
+			//TODO 先判断项目名是否存在
+			var url:String = "http://localhost/frontend/web/index.php?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=1&filename="+stagePane.info.name;
+			var requestData:URLRequest = new URLRequest(url); 
+			var loader:URLLoader = new URLLoader(); 
+			requestData.data = zipData;
+			requestData.method = URLRequestMethod.POST;
+			requestData.contentType = "application/octet-stream"; 
+			loader.load(requestData);
+			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
+				var response:String = by.blooddy.crypto.serialization.JSON.decode(loader.data).url;
+				Scratch.app.log(LogLevel.INFO,'上传项目完成',{data:response});
+				DialogBox.close("保存成功","已经保存到服务器啦~",null,"关闭");
+			});
+		}
+		
+		function fileSaved(e:Event):void {
+			if (!fromJS) setProjectName(e.target.name);
+			if (isExtensionDevMode) {
+				// Some versions of the editor think of this as an "export" and some think of it as a "save"
+				saveNeeded = false;
+			}
+			if (saveCallback != null) saveCallback();
+		}
+		
+		if (loadInProgress) return;
+		var projIO:ProjectIO = new ProjectIO(this);
+		projIO.convertSqueakSounds(stagePane, squeakSoundsConverted);
 
+	}
 	protected function saveProjectAndThen(postSaveAction:Function = null):void {
 		// Give the user a chance to save their project, if needed, then call postSaveAction.
 		function doNothing():void {
@@ -1240,7 +1337,7 @@ public class Scratch extends Sprite {
 		d.addButton('Cancel', cancel);
 		d.showOnStage(stage);
 	}
-	
+
 	//导出项目到本地
 	public function exportProjectToFile(fromJS:Boolean = false, saveCallback:Function = null):void {
 		function squeakSoundsConverted():void {
@@ -1253,7 +1350,7 @@ public class Scratch extends Sprite {
 			file.addEventListener(Event.COMPLETE, fileSaved);
 			file.save(zipData, fixFileName(defaultName));
 		}
-
+		//保存完毕
 		function fileSaved(e:Event):void {
 			if (!fromJS) setProjectName(e.target.name);
 			if (isExtensionDevMode) {
@@ -1324,7 +1421,7 @@ public class Scratch extends Sprite {
 		var d:DialogBox = new DialogBox();
 		d.addTitle('Version Details');
 		d.addField('GPU enabled', kGitHashFieldWidth, SCRATCH::allow3d);
-		d.addField('scratch-flash', kGitHashFieldWidth, SCRATCH::revision);
+//		d.addField('scratch-flash', kGitHashFieldWidth, SCRATCH::revision);
 		return d;
 	}
 

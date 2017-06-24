@@ -52,7 +52,7 @@ public class RecordingSpecEditor extends Sprite {
 		addChild(base = new Shape());
 		setWidthHeight(440, 10);
 
-		addChild(description = makeLabel('录屏炫耀一下吧~\n最长可以录制1分钟',14));
+		addChild(description = makeLabel('来录屏炫耀一下吧~\n最长可以录制1分钟',14));
 		addChild(notSavedLabel = makeLabel('视频下载的同时还将存到云端，用于交作业或者分享',14));
 		addChild(pleaseNoteLabel = makeLabel('注意：',14,true));
 		addChild(moreLabel = makeLabel('更多选项', 14));
