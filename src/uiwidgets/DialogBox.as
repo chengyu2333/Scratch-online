@@ -23,7 +23,9 @@ package uiwidgets {
 	import flash.filters.DropShadowFilter;
 	import flash.text.*;
 	import flash.utils.Dictionary;
+	
 	import translation.Translator;
+	
 	import ui.parts.UIPart;
 
 public class DialogBox extends Sprite {
@@ -136,18 +138,26 @@ public class DialogBox extends Sprite {
 		addChild(o);
 	}
 
-	public function addField(fieldName:String, width:int, defaultValue:* = null, showLabel:Boolean = true):void {
+	public function addField(fieldName:String, width:int, defaultValue:* = null, showLabel:Boolean = true ,height:int = 0):void {
 		var l:TextField = null;
 		if (showLabel) {
 			l = makeLabel(Translator.map(fieldName) + ':');
 			addChild(l);
 		}
-		var f:TextField = makeField(width);
+		
+		if(height>0){
+			var f:TextField = makeMultilineField(width,height);
+		}else{
+			var f:TextField = makeField(width);
+		}
+		
 		if (defaultValue != null) f.text = defaultValue;
 		addChild(f);
 		fields[fieldName] = f;
 		labelsAndFields.push([l, f]);
 	}
+	
+	
 
 	public function addBoolean(fieldName:String, defaultValue:Boolean = false, isRadioButton:Boolean = false):void {
 		var l:TextField = makeLabel(Translator.map(fieldName) + ':');
@@ -294,6 +304,23 @@ public class DialogBox extends Sprite {
 
 		return result;
 	}
+	
+	private function makeMultilineField(width:int,height:int):TextField {
+		var result:TextField = new TextField();
+		result.selectable = true;
+		result.type = TextFieldType.INPUT;
+		result.background = true;
+		result.border = true;
+		result.defaultTextFormat = CSS.normalTextFormat;
+		result.width = width;
+		result.height = height;
+		result.multiline = true;
+		result.wordWrap = true;
+		result.backgroundColor = 0xFFFFFF;
+		result.borderColor = CSS.borderColor;
+		
+		return result;
+	}
 
 	public function fixLayout():void {
 		var label:TextField;
@@ -321,6 +348,8 @@ public class DialogBox extends Sprite {
 			field.x = fieldX;
 			field.y = fieldY + 1;
 			fieldY += heightPerField;
+			//fieldY += heightPerField;
+			fieldY += label.height+10;
 		}
 		// widget
 		if (widget != null) {
@@ -377,7 +406,8 @@ public class DialogBox extends Sprite {
 			var r:Array = labelsAndFields[i];
 			if (r[0] != null) maxLabelWidth = Math.max(maxLabelWidth, r[0].width);
 			maxFieldWidth = Math.max(maxFieldWidth, r[1].width);
-			h += heightPerField;
+//			h += heightPerField;
+			h += r[1].height+10;
 		}
 		// boolean fields
 		for (i = 0; i < booleanLabelsAndFields.length; i++) {

@@ -74,28 +74,27 @@ public class ExtensionDevManager extends ExtensionManager {
 	protected function localExtensionLoaded():void {
 	}
 	
-	//隐藏按钮
+	
 	public function makeLoadExperimentalExtensionButton():Button {
-		return null;
 		function showShiftMenu(evt:MouseEvent):void {
 			loadAndWatchExtensionFile();
 		}
 
 		// TODO: button tip link
-		var button:Button = new Button(Translator.map('Load Experimental Extension'));
+		var button:Button = new Button(Translator.map('载入实验扩展'));
 		if (SCRATCH::allow3d) { // TODO: use a better flag or rename this one
 			// This event is only available in flash 11.2 and above.
 			button.addEventListener(MouseEvent.RIGHT_CLICK, showShiftMenu);
 		}
 		button.setEventAction(function (evt:MouseEvent):void {
-			if (evt.shiftKey) {
-				showShiftMenu(evt);
-			} else {
-				Scratch.app.setModalOverlay(true);
-				Scratch.app.externalCall('JSshowExtensionDialog');
-			}
+			showShiftMenu(evt);
+//			if (evt.shiftKey) {
+//				showShiftMenu(evt);
+//			} else {
+//				Scratch.app.setModalOverlay(true);
+//				Scratch.app.externalCall('JSshowExtensionDialog');
+//			}
 		});
-
 		return button;
 	}
 

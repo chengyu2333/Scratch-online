@@ -275,7 +275,7 @@ public class ScratchStage extends ScratchObj {
 
 	public function menu(evt:MouseEvent):Menu {
 		var m:Menu = new Menu();
-		m.addItem('save picture of stage', saveScreenshot);
+		m.addItem('舞台截图', saveScreenshot);
 		return m;
 	}
 	

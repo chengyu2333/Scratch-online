@@ -895,6 +895,7 @@ public class ScratchRuntime {
 			var file:FileReference = FileReference(event.target);
 			fileName = file.name;
 			data = file.data;
+			
 			if (app.stagePane.isEmpty()) doInstall();
 			else DialogBox.confirm('Replace contents of the current project?', app.stage, doInstall);
 		}

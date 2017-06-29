@@ -25,8 +25,10 @@
 package {
 import blocks.*;
 
+import by.blooddy.crypto.image.JPEGEncoder;
 import by.blooddy.crypto.serialization.JSON;
 
+import com.adobe.images.JPGEncoder;
 import com.adobe.utils.StringUtil;
 import com.rainbowcreatures.swf.*;
 
@@ -85,7 +87,7 @@ public class Scratch extends Sprite {
 	public var isArmCPU:Boolean;
 	public var jsEnabled:Boolean = false; // true when the SWF can talk to the webpage
 	public var ignoreResize:Boolean = false; // If true, temporarily ignore resize events.
-	public var isExtensionDevMode:Boolean = false; // If true, run in extension development mode (as on ScratchX)
+	public var isExtensionDevMode:Boolean = true; // If true, run in extension development mode (as on ScratchX)
 	public var isMicroworld:Boolean = false;
 
 	public var presentationScale:Number;
@@ -258,7 +260,6 @@ public class Scratch extends Sprite {
 //			loadSingleGithubURL(project_url);
 //		}
 //		
-		
 	}
 	
 	
@@ -267,14 +268,38 @@ public class Scratch extends Sprite {
 	//保存截屏
 	private function saveScreenshot() : void
 	{
-//		var _loc_1:* = new BitmapData(this.width, this.height, true, 0);
-//		_loc_1.draw(this);
-//		var _loc_2:* = new JPGEncoder(50);
-//		var _loc_3:* = _loc_2.encode(_loc_1);
-//		var _loc_4:* = new OSSUploader();
-//		var _loc_5:* = UIDUtil.createUID();
-//		_loc_4.uploadOneFile(_loc_5, _loc_3, "tmp/tmpfiles/", ".jpg", "h:screenshot");
-//		return;
+		var data:BitmapData = new BitmapData(this.width,this.height,true,0);
+		data.draw(this);
+		var jpg_encoder:* = new JPGEncoder(50);
+		var jpg:* = jpg_encoder.encode(data);
+		
+		
+		
+		
+		function ask(dialog:DialogBox):void {
+			var ask:String = dialog.getField('问题描述');
+			var url:String = "http://localhost/frontend/web/index.php?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=2&filename="+ask;
+			var requestData:URLRequest = new URLRequest(url); 
+			var loader:URLLoader = new URLLoader(); 
+		
+			requestData.data = jpg;
+			requestData.method = URLRequestMethod.POST;
+			requestData.contentType = "application/octet-stream"; 
+			loader.load(requestData);
+			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
+				var response:String = by.blooddy.crypto.serialization.JSON.decode(loader.data).url;
+				Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response});
+				DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
+			});
+			
+		}
+		
+		var d:DialogBox = new DialogBox(ask);
+		d.addTitle('向老师反馈问题');
+		d.addField('问题描述', 150,null,true,50);
+		d.addField('问题描述', 150,null,true,50);
+		d.addAcceptCancelButtons('反馈');
+		d.showOnStage(app.stage);
 	}
 	
 	//预加载编码模块
@@ -1124,6 +1149,7 @@ public class Scratch extends Sprite {
 	public function showHelpMenu(b:*):void {
 		var m:Menu = new Menu(null,'帮助',CSS.topBarColor(),28);
 		m.addItem('关于',showAboutDialog);
+		m.addItem('反馈',saveScreenshot);
 		m.showOnStage(stage, b.x, topBarPart.bottom() - 1);
 	}
 	
@@ -1147,10 +1173,10 @@ public class Scratch extends Sprite {
 	protected function addFileMenuItems(b:*, m:Menu):void {
 		
 		m.addItem('从本地加载项目', runtime.selectProjectFile);
-		m.addItem('保存项目到本地', exportProjectToFile);
+		m.addItem('导出项目到本地', exportProjectToFile);
 		m.addLine();
-		m.addItem('加载项目',loadProject);
-		m.addItem('保存项目',saveProject);
+		m.addItem('从云端加载项目',loadProject);
+		m.addItem('保存项目到云端',saveProject);
 		m.addLine();
 		
 		m.addItem('重命名项目',changeProjectTitle);
@@ -1761,6 +1787,7 @@ public class Scratch extends Sprite {
 			// Ignore the exception that happens when you call browse() with the file browser open
 			fileList.browse(filter != null ? [filter] : null);
 		} catch (e:*) {
+			
 		}
 	}
 

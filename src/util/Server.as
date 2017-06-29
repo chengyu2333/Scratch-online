@@ -136,8 +136,8 @@ public class Server implements IServer {
 			var urlPathStart:int = url.indexOf('/', 10);
 			
 			//安全策略，解决无法从本地载入
-//			var policyFileURL:String = url.substr(0, urlPathStart) + '/crossdomain.xml?cb=' + Math.random();
-			var policyFileURL:String ='./crossdomain.xml?cb=' + Math.random();
+			var policyFileURL:String = url.substr(0, urlPathStart) + '/crossdomain.xml?cb=' + Math.random();
+//			var policyFileURL:String ='crossdomain.xml?cb=' + Math.random();
 			Security.loadPolicyFile(policyFileURL);
 			Scratch.app.log(LogLevel.WARNING, 'Reloading policy file', {policy: policyFileURL, initiator: url});
 		}

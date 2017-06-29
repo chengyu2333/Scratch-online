@@ -73,7 +73,7 @@ public class TopBarPart extends UIPart {
 		addTextButtons();
 		addToolButtons();
 		if (Scratch.app.isExtensionDevMode) {
-			addChild(logoButton = new IconButton(app.logoButtonPressed, Resources.createBmp('scratchx-logo')));
+			addChild(logoButton = new IconButton(app.logoButtonPressed, Resources.createBmp('scratchxlogo')));
 			const desiredButtonHeight:Number = 20;
 			logoButton.scaleX = logoButton.scaleY = 1;
 			var scale:Number = desiredButtonHeight / logoButton.height;
@@ -84,7 +84,8 @@ public class TopBarPart extends UIPart {
 
 			var extensionDevManager:ExtensionDevManager = Scratch.app.extensionManager as ExtensionDevManager;
 			if (extensionDevManager) {
-				addChild(loadExperimentalButton = extensionDevManager.makeLoadExperimentalExtensionButton());
+				loadExperimentalButton = extensionDevManager.makeLoadExperimentalExtensionButton();
+				addChild(loadExperimentalButton);
 			}
 		}
 	}

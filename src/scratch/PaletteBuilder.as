@@ -152,7 +152,8 @@ public class PaletteBuilder {
 		if (Scratch.app.isExtensionDevMode) {
 			var extensionDevManager:ExtensionDevManager = Scratch.app.extensionManager as ExtensionDevManager;
 			if (extensionDevManager) {
-				addItem(extensionDevManager.makeLoadExperimentalExtensionButton());
+				//隐藏按钮
+				//addItem(extensionDevManager.makeLoadExperimentalExtensionButton());
 			}
 		}
 	}
