@@ -253,13 +253,11 @@ public class Scratch extends Sprite {
 		stagePane.info.name = "未命名";
 		//初始化项目
 		var project_url:String = loaderInfo.parameters["project"];
-		log(LogLevel.DEBUG,'init project',{project:project_url});
+		if(project_url!="undefined"&&project_url!=""){
+			log(LogLevel.DEBUG,'init project',{project:project_url});
+			loadSingleGithubURL(project_url);
+		}
 		
-//		if(project_url!="undefined"&&project_url!=""){
-//			log(LogLevel.DEBUG,'init project',{project:project_url});
-//			loadSingleGithubURL(project_url);
-//		}
-//		
 	}
 	
 	
@@ -268,15 +266,15 @@ public class Scratch extends Sprite {
 	//保存截屏
 	private function saveScreenshot() : void
 	{
+	
 		var data:BitmapData = new BitmapData(this.width,this.height,true,0);
 		data.draw(this);
-		var jpg_encoder:* = new JPGEncoder(50);
-		var jpg:* = jpg_encoder.encode(data);
-		
-		
-		
 		
 		function ask(dialog:DialogBox):void {
+			
+			var jpg_encoder:* = new JPGEncoder(50);
+			var jpg:* = jpg_encoder.encode(data);	
+			
 			var ask:String = dialog.getField('问题描述');
 			var url:String = "http://localhost/frontend/web/index.php?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=2&filename="+ask;
 			var requestData:URLRequest = new URLRequest(url); 
@@ -287,16 +285,19 @@ public class Scratch extends Sprite {
 			requestData.contentType = "application/octet-stream"; 
 			loader.load(requestData);
 			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-				var response:String = by.blooddy.crypto.serialization.JSON.decode(loader.data).url;
-				Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response});
-				DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
+				var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+				if(response.result==1){
+					Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response.msg});
+					DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
+				}else{
+					DialogBox.close("反馈失败",response.msg,null,"关闭");
+				}
 			});
 			
 		}
 		
 		var d:DialogBox = new DialogBox(ask);
 		d.addTitle('向老师反馈问题');
-		d.addField('问题描述', 150,null,true,50);
 		d.addField('问题描述', 150,null,true,50);
 		d.addAcceptCancelButtons('反馈');
 		d.showOnStage(app.stage);
@@ -1312,9 +1313,13 @@ public class Scratch extends Sprite {
 			requestData.contentType = "application/octet-stream"; 
 			loader.load(requestData);
 			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-				var response:String = by.blooddy.crypto.serialization.JSON.decode(loader.data).url;
-				Scratch.app.log(LogLevel.INFO,'上传项目完成',{data:response});
-				DialogBox.close("保存成功","已经保存到服务器啦~",null,"关闭");
+				var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+				if(response.result==1){
+					Scratch.app.log(LogLevel.INFO,'上传项目完成',{data:response.msg});
+					DialogBox.close("保存成功","已经保存到服务器啦~",null,"关闭");
+				}else{
+					DialogBox.close("保存失败",response.msg,null,"关闭");
+				}
 			});
 		}
 		

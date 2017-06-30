@@ -536,10 +536,14 @@ public class ScratchRuntime {
 				requestData.contentType = "application/octet-stream"; 
 				loader.load(requestData);
 				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-					var response:String = by.blooddy.crypto.serialization.JSON.decode(loader.data).url;
-					Scratch.app.log(LogLevel.INFO,'上传完成',{data:response});
-					var specEditor:SharingSpecEditor = new SharingSpecEditor(response);
-					DialogBox.close("分享你的视频",null,specEditor,"关闭");
+					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+					if(response.result==1){
+						Scratch.app.log(LogLevel.INFO,'上传录像完成',{data:response.msg});
+						var specEditor:SharingSpecEditor = new SharingSpecEditor(response.url);
+						DialogBox.close("分享你的视频",null,specEditor,"关闭");
+					}else{
+						DialogBox.close("上传录像失败",response.msg,null,"关闭");
+					}
 				});
 				
 				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
@@ -897,7 +901,7 @@ public class ScratchRuntime {
 			data = file.data;
 			
 			if (app.stagePane.isEmpty()) doInstall();
-			else DialogBox.confirm('Replace contents of the current project?', app.stage, doInstall);
+			else DialogBox.confirm('确定要替换项目么？', app.stage, doInstall);
 		}
 		function doInstall(ignore:* = null):void {
 			installProjectFromFile(fileName, data);
@@ -1304,7 +1308,7 @@ public class ScratchRuntime {
 
 		if (allSendersOfBroadcast(newMsg).length > 0 ||
 			allReceiversOfBroadcast(newMsg).length > 0) {
-			DialogBox.notify("Cannot Rename", "That name is already in use.");
+			DialogBox.notify("不能重命名", "名字已经被使用啦");
 			return;
 		}
 
