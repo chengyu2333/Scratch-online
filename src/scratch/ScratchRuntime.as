@@ -1,24 +1,3 @@
-/*
- * Scratch Project Editor and Player
- * Copyright (C) 2014 Massachusetts Institute of Technology
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
-
-// ScratchRuntime.as
-// John Maloney, September 2010
 
 package scratch {
 import assets.Resources;
@@ -528,7 +507,7 @@ public class ScratchRuntime {
 			video = myEncoder.getVideo();
 			function saveFile():void {
 				
-				var url:String = "http://localhost/frontend/web/index.php?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&type=0&filename="+escape(app.stagePane.info.name);
+				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&type=0&filename="+app.projectName();
 				var requestData:URLRequest = new URLRequest(url); 
 				var loader:URLLoader = new URLLoader(); 
 				requestData.data = video;
@@ -537,7 +516,7 @@ public class ScratchRuntime {
 				loader.load(requestData);
 				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
 					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-					if(response.result==1){
+					if(response.error_msg==""){
 						Scratch.app.log(LogLevel.INFO,'上传录像完成',{data:response.msg});
 						var specEditor:SharingSpecEditor = new SharingSpecEditor(response.url);
 						DialogBox.close("分享你的视频",null,specEditor,"关闭");

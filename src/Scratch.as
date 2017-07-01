@@ -1,27 +1,3 @@
-/*
- * Scratch Project Editor and Player
- * Copyright (C) 2014 Massachusetts Institute of Technology
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
-
-// Scratch.as
-// John Maloney, September 2009
-//
-// This is the top-level application.
-
 package {
 import blocks.*;
 
@@ -238,9 +214,6 @@ public class Scratch extends Sprite {
 		else runtime.installEmptyProject();
 
 		fixLayout();
-		//Analyze.collectAssets(0, 119110);
-		//Analyze.checkProjects(56086, 64220);
-		//Analyze.countMissingAssets();
 
 		handleStartupParameters();
 		this.preloadEncoder();
@@ -262,46 +235,7 @@ public class Scratch extends Sprite {
 	
 	
 	
-	
-	//保存截屏
-	private function saveScreenshot() : void
-	{
-	
-		var data:BitmapData = new BitmapData(this.width,this.height,true,0);
-		data.draw(this);
-		
-		function ask(dialog:DialogBox):void {
-			
-			var jpg_encoder:* = new JPGEncoder(50);
-			var jpg:* = jpg_encoder.encode(data);	
-			
-			var ask:String = dialog.getField('问题描述');
-			var url:String = "http://localhost/frontend/web/index.php?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=2&filename="+ask;
-			var requestData:URLRequest = new URLRequest(url); 
-			var loader:URLLoader = new URLLoader(); 
-		
-			requestData.data = jpg;
-			requestData.method = URLRequestMethod.POST;
-			requestData.contentType = "application/octet-stream"; 
-			loader.load(requestData);
-			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-				var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-				if(response.result==1){
-					Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response.msg});
-					DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
-				}else{
-					DialogBox.close("反馈失败",response.msg,null,"关闭");
-				}
-			});
-			
-		}
-		
-		var d:DialogBox = new DialogBox(ask);
-		d.addTitle('向老师反馈问题');
-		d.addField('问题描述', 150,null,true,50);
-		d.addAcceptCancelButtons('反馈');
-		d.showOnStage(app.stage);
-	}
+
 	
 	//预加载编码模块
 	private function preloadEncoder() : void
@@ -1176,7 +1110,8 @@ public class Scratch extends Sprite {
 		m.addItem('从本地加载项目', runtime.selectProjectFile);
 		m.addItem('导出项目到本地', exportProjectToFile);
 		m.addLine();
-		m.addItem('从云端加载项目',loadProject);
+		m.addItem('从URL加载项目',loadProject);
+		m.addItem('从服务器加载项目',projectList);
 		m.addItem('保存项目到云端',saveProject);
 		m.addLine();
 		
@@ -1243,6 +1178,48 @@ public class Scratch extends Sprite {
 		d.showOnStage(stage, true);
 	}
 
+	
+	//保存截屏
+	private function saveScreenshot() : void
+	{
+		
+		var data:BitmapData = new BitmapData(this.width,this.height,true,0);
+		data.draw(this);
+		
+		function ask(dialog:DialogBox):void {
+			
+			var jpg_encoder:* = new JPGEncoder(50);
+			var jpg:* = jpg_encoder.encode(data);	
+			
+			var ask:String = dialog.getField('问题描述');
+			var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=2&filename="+ask;
+			var requestData:URLRequest = new URLRequest(url); 
+			var loader:URLLoader = new URLLoader(); 
+			
+			requestData.data = jpg;
+			requestData.method = URLRequestMethod.POST;
+			requestData.contentType = "application/octet-stream"; 
+			loader.load(requestData);
+			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
+				var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+				if(response.result==1){
+					Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response.msg});
+					DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
+				}else{
+					DialogBox.close("反馈失败",response.msg,null,"关闭");
+				}
+			});
+			
+		}
+		
+		var d:DialogBox = new DialogBox(ask);
+		d.addTitle('向老师反馈问题');
+		d.addField('问题描述', 150,null,true,50);
+		d.addAcceptCancelButtons('反馈');
+		d.showOnStage(app.stage);
+	}
+	
+	
 	protected function canExportInternals():Boolean {
 		return false;
 	}
@@ -1279,7 +1256,10 @@ public class Scratch extends Sprite {
 			externalCallArray(jsCallback);
 		});
 	}
-	//加载项目
+	public function projectList():void{
+		externalCall('projectList');
+	}
+	//从url加载项目
 	public function loadProject():void{
 		
 		function load(dialog:DialogBox):void {
@@ -1305,7 +1285,7 @@ public class Scratch extends Sprite {
 			defaultName = ((defaultName.length > 0) ? defaultName : 'project') + projectType;
 			var zipData:ByteArray = projIO.encodeProjectAsZipFile(stagePane);
 			//TODO 先判断项目名是否存在
-			var url:String = "http://localhost/frontend/web/index.php?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=1&filename="+stagePane.info.name;
+			var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=1&filename="+projectName();
 			var requestData:URLRequest = new URLRequest(url); 
 			var loader:URLLoader = new URLLoader(); 
 			requestData.data = zipData;
@@ -1803,7 +1783,9 @@ public class Scratch extends Sprite {
 	public function externalInterfaceAvailable():Boolean {
 		return ExternalInterface.available;
 	}
-
+	
+	
+	//调用js
 	public function externalCall(functionName:String, returnValueCallback:Function = null, ...args):void {
 		args.unshift(functionName);
 		var retVal:*;
@@ -1820,6 +1802,7 @@ public class Scratch extends Sprite {
 		}
 	}
 
+	//暴露js调用的入口
 	public function addExternalCallback(functionName:String, closure:Function):void {
 		ExternalInterface.addCallback(functionName, closure);
 	}

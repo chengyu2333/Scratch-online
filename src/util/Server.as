@@ -1,29 +1,3 @@
-/*
- * Scratch Project Editor and Player
- * Copyright (C) 2014 Massachusetts Institute of Technology
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
-
-// ServerOffline.as
-// John Maloney, June 2013
-//
-// Interface to the Scratch website API's for Offline Editor.
-//
-// Note: All operations call the whenDone function with the result
-// if the operation succeeded or null if it failed.
 
 package util {
 import by.blooddy.crypto.serialization.JSON;
@@ -52,7 +26,7 @@ import mx.utils.URLUtil;
 
 public class Server implements IServer {
 
-	protected var URLs:Object = {};
+	public var URLs:Object = {};
 
 	public function Server() {
 		setDefaultURLs();
