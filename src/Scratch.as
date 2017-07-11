@@ -285,7 +285,7 @@ public class Scratch extends Sprite {
 		url = StringUtil.trim(unescape(url));
 		function handleComplete(e:Event):void {
 			runtime.installProjectFromData(sbxLoader.data);
-			if (StringUtil.trim(projectName()).length == 0) {
+//			if (StringUtil.trim(projectName()).length == 0) {
 				var newProjectName:String = url;
 				var index:int = newProjectName.indexOf('?');
 				if (index > 0) newProjectName = newProjectName.slice(0, index);
@@ -294,11 +294,14 @@ public class Scratch extends Sprite {
 				index = newProjectName.lastIndexOf('.sbx');
 				if (index > 0) newProjectName = newProjectName.slice(0, index);
 				setProjectName(newProjectName);
-			}
+				stagePane.info.name = newProjectName;
+//			}
 		}
 
 		function handleError(e:ErrorEvent):void {
 			jsThrowError('Failed to load SBX: ' + e.toString());
+			DialogBox.notify('错误','加载项目失败', stage);
+			lp.setProgress(1);
 		}
 
 		var fileExtension:String = url.substr(url.lastIndexOf('.')).toLowerCase();
@@ -308,6 +311,7 @@ public class Scratch extends Sprite {
 		}
 
 		// Otherwise assume it's a project (SB2, SBX, etc.)
+		addLoadProgressBox("加载中……");
 		loadInProgress = true;
 		var request:URLRequest = new URLRequest(url);
 		var sbxLoader:URLLoader = new URLLoader(request);
@@ -315,6 +319,10 @@ public class Scratch extends Sprite {
 		sbxLoader.addEventListener(Event.COMPLETE, handleComplete);
 		sbxLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, handleError);
 		sbxLoader.addEventListener(IOErrorEvent.IO_ERROR, handleError);
+		sbxLoader.addEventListener(ProgressEvent.PROGRESS, function (event:ProgressEvent){
+			var percent:* = event.bytesLoaded / event.bytesTotal;
+			lp.setProgress(percent);
+		});
 		sbxLoader.load(request);
 	}
 

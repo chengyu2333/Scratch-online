@@ -406,7 +406,7 @@ public class ScratchRuntime {
 		baFlvEncoder.setVideoProperties(videoWidth, videoHeight);
 		baFlvEncoder.setAudioProperties(FlvEncoder.SAMPLERATE_44KHZ, true, true, true);
 		baFlvEncoder.start();
-		waitAndStart();
+		//waitAndStart();
 		//		加载编码器	
 		this.myEncoder.load("mp4/");
 
@@ -571,7 +571,7 @@ public class ScratchRuntime {
 					
 				}
 				//flv编码
-				baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
+				//baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
 				
 				videoFrames[videoPosition]=null;
 				videoSounds[videoPosition]=null;
