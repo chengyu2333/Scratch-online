@@ -111,6 +111,7 @@ public class Scratch extends Sprite {
 	//用户信息
 	public var user_id:String="";
 	public var user_token:String="";
+	public var user_class_id:String="";
 
 	public var logger:Log = new Log(16);
 
@@ -208,6 +209,9 @@ public class Scratch extends Sprite {
 		if (loaderInfo.parameters["user_id"]){
 			user_id = loaderInfo.parameters["user_id"];
 			user_token = loaderInfo.parameters["user_token"];
+		}
+		if(loaderInfo.parameters["user_class_id"]){
+			user_class_id = loaderInfo.parameters["user_class_id"];
 		}
 		// install project before calling fixLayout()
 		if (editMode) runtime.installNewProject();
@@ -1284,7 +1288,7 @@ public class Scratch extends Sprite {
 	//保存项目
 	public function saveProject(fromJS:Boolean = false, saveCallback:Function = null):void{
 		
-		Scratch.app.log(LogLevel.TRACK, "正在上传项目", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
+		Scratch.app.log(LogLevel.TRACK, "正在上传项目", {user_id: app.user_id, user_token: app.user_token,user_class_id:user_class_id, projname: projectName()});
 		
 		function squeakSoundsConverted():void {
 			scriptsPane.saveScripts(false);
@@ -1293,7 +1297,7 @@ public class Scratch extends Sprite {
 			defaultName = ((defaultName.length > 0) ? defaultName : 'project') + projectType;
 			var zipData:ByteArray = projIO.encodeProjectAsZipFile(stagePane);
 			//TODO 先判断项目名是否存在
-			var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=1&filename="+projectName();
+			var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=1&filename="+projectName();
 			var requestData:URLRequest = new URLRequest(url); 
 			var loader:URLLoader = new URLLoader(); 
 			requestData.data = zipData;

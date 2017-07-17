@@ -507,7 +507,7 @@ public class ScratchRuntime {
 			video = myEncoder.getVideo();
 			function saveFile():void {
 				
-				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&type=0&filename="+app.projectName();
+				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&user_class_id="+app.user_class_id+"&type=0&filename="+app.projectName();
 				var requestData:URLRequest = new URLRequest(url); 
 				var loader:URLLoader = new URLLoader(); 
 				requestData.data = video;
