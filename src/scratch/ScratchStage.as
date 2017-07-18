@@ -116,7 +116,7 @@ public class ScratchStage extends ScratchObj {
 		else {
 			addChild(counter);
 		}
-		addChild(arrowText=makeLabel("To stop recording, click the square",14));
+		addChild(arrowText=makeLabel("点击方块结束录像",14));
 		arrowImage = Resources.createBmp('stopArrow');
 		arrowImage.x = 6;
 		arrowImage.y = 335;

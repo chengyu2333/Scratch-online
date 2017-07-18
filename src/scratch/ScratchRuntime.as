@@ -505,7 +505,7 @@ public class ScratchRuntime {
 		if (event.code == "encoded")
 		{
 			video = myEncoder.getVideo();
-			function saveFile():void {
+			function saveAndUploadFile():void {
 				
 				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&user_class_id="+app.user_class_id+"&type=0&filename="+app.projectName();
 				var requestData:URLRequest = new URLRequest(url); 
@@ -521,24 +521,31 @@ public class ScratchRuntime {
 						var specEditor:SharingSpecEditor = new SharingSpecEditor(response.url);
 						DialogBox.close("分享你的视频",null,specEditor,"关闭");
 					}else{
-						DialogBox.close("上传录像失败",response.msg,null,"关闭");
+						DialogBox.close("上传录像失败",response.error_msg,null,"关闭");
 					}
 				});
 				
 				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
 				
 				var file:FileReference = new FileReference();
-				file.save(video, "movie.mp4");
-				
+				file.save(video, app.projectName()+".mp4");
 			    releaseVideo(false);
 	        }
+			function saveFile():void {
+				var file:FileReference = new FileReference();
+				file.save(video, app.projectName()+".mp4");
+				releaseVideo(false);
+			}
 			//		释放视频
 			function releaseVideo(log:Boolean = true):void {
-			//	if (log) Scratch.app.log(LogLevel.TRACK, "Video canceled", {projectID: app.projectID, seconds: roundToTens(seconds), megabytes: roundToTens(video.length/1000000)});
 	            video = null;
 			}
-	
-			DialogBox.close("录制完成","点击按钮保存到服务器并下载",null,"保存并下载",app.stage,saveFile,releaseVideo,null,true);
+			if(app.user_token==""){
+				DialogBox.close("录制完成","点击按钮下载",null,"下载",app.stage,saveFile,releaseVideo,null,true);
+			}else{
+				DialogBox.close("录制完成","点击按钮保存到服务器并下载",null,"保存并下载",app.stage,saveAndUploadFile,releaseVideo,null,true);
+			}
+			
 		}
 	}
 	

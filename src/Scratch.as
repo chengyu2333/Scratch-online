@@ -213,6 +213,10 @@ public class Scratch extends Sprite {
 		if(loaderInfo.parameters["user_class_id"]){
 			user_class_id = loaderInfo.parameters["user_class_id"];
 		}
+		if(user_token==""||user_token=="undefined"){
+			user_token="";
+			DialogBox.notify('提示','您还没有登录，云端功能将无法使用哦~', stage);
+		}
 		// install project before calling fixLayout()
 		if (editMode) runtime.installNewProject();
 		else runtime.installEmptyProject();
@@ -1096,7 +1100,9 @@ public class Scratch extends Sprite {
 	public function showHelpMenu(b:*):void {
 		var m:Menu = new Menu(null,'帮助',CSS.topBarColor(),28);
 		m.addItem('关于',showAboutDialog);
-		m.addItem('反馈',saveScreenshot);
+		if(user_token!=""){
+			m.addItem('反馈',saveScreenshot);
+		}
 		m.showOnStage(stage, b.x, topBarPart.bottom() - 1);
 	}
 	
@@ -1120,11 +1126,13 @@ public class Scratch extends Sprite {
 	protected function addFileMenuItems(b:*, m:Menu):void {
 		
 		m.addItem('从本地加载项目', runtime.selectProjectFile);
-		m.addItem('导出项目到本地', exportProjectToFile);
-		m.addLine();
 		m.addItem('从URL加载项目',loadProject);
-		m.addItem('从服务器加载项目',projectList);
-		m.addItem('保存项目到云端',saveProject);
+		m.addItem('导出项目到本地', exportProjectToFile);
+		if(user_token!=""){
+			m.addLine();
+			m.addItem('从服务器加载项目',projectList);
+			m.addItem('保存项目到云端',saveProject);
+		}
 		m.addLine();
 		
 		m.addItem('重命名项目',changeProjectTitle);
@@ -1133,7 +1141,12 @@ public class Scratch extends Sprite {
 		if (runtime.recording || runtime.ready==ReadyLabel.COUNTDOWN || runtime.ready==ReadyLabel.READY) {
 			m.addItem('停止录像', runtime.stopVideo);
 		} else {
-			m.addItem('录像|交作业', runtime.exportToVideo);
+			if(user_token!=""){
+				m.addItem('录像|交作业', runtime.exportToVideo);
+			}else{
+				m.addItem('录像', runtime.exportToVideo);
+			}
+			
 		}
 		if (canUndoRevert()) {
 			m.addLine();
@@ -1238,10 +1251,10 @@ public class Scratch extends Sprite {
 
 	private function showAboutDialog():void {
 		DialogBox.notify(
-				'Scratch 2.0 ' + versionString,
+				'Scratch 在线版 ' + versionString,
 				'\n\nCopyright © 2017 MIT Media Laboratory' +
-				'\nhahaha.' +
-				'\n\n= = == = = ==', stage);
+				'\nSecondary development by Chengyu.' +
+				'\n\n', stage);
 		var _newURL:URLRequest=new URLRequest("http://www.213.name");
 		var _fangshi:String="_blank";
 		navigateToURL(_newURL,_fangshi);
@@ -1310,7 +1323,7 @@ public class Scratch extends Sprite {
 					Scratch.app.log(LogLevel.INFO,'上传项目完成',{data:response.msg});
 					DialogBox.close("保存成功","已经保存到服务器啦~",null,"关闭");
 				}else{
-					DialogBox.close("保存失败",response.msg,null,"关闭");
+					DialogBox.close("保存失败",response.error_msg,null,"关闭");
 				}
 			});
 		}
