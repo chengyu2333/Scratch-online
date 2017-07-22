@@ -111,7 +111,7 @@ public class Scratch extends Sprite {
 	//用户信息
 	public var user_id:String="";
 	public var user_token:String="";
-	public var user_class_id:String="";
+	public var user_class_id:String="0";
 
 	public var logger:Log = new Log(16);
 
@@ -209,14 +209,22 @@ public class Scratch extends Sprite {
 		if (loaderInfo.parameters["user_id"]){
 			user_id = loaderInfo.parameters["user_id"];
 			user_token = loaderInfo.parameters["user_token"];
+			if(loaderInfo.parameters["user_class_id"]){
+				user_class_id = loaderInfo.parameters["user_class_id"];
+			}
 		}
-		if(loaderInfo.parameters["user_class_id"]){
-			user_class_id = loaderInfo.parameters["user_class_id"];
-		}
+		
 		if(user_token==""||user_token=="undefined"){
 			user_token="";
 			DialogBox.notify('提示','您还没有登录，云端功能将无法使用哦~', stage);
+		}else{
+			if(user_class_id==""||user_class_id=="undefined"||user_class_id=="0"){
+				user_class_id="0";
+			}else{
+				DialogBox.notify('提示','您当前在作业模式下，提交的作品将作为作业上交哦~', stage);
+			}
 		}
+		
 		// install project before calling fixLayout()
 		if (editMode) runtime.installNewProject();
 		else runtime.installEmptyProject();
@@ -228,8 +236,6 @@ public class Scratch extends Sprite {
 		
 		Translator.setLanguage("zh-cn");
 		languageChanged = true;
-		
-		
 		setProjectName('未命名');
 		stagePane.info.name = "未命名";
 		//初始化项目
@@ -248,7 +254,7 @@ public class Scratch extends Sprite {
 	//预加载编码模块
 	private function preloadEncoder() : void
 	{
-		var url:* = new URLRequest("mp4/FW_SWFBridge_ffmpeg.swf?v=24");
+		var url:* = new URLRequest(new Server().URLs['OSS']+"/scratch/FW_SWFBridge_ffmpeg.swf?v=24");
 		var loader:* = new Loader();
 		var con:* = new LoaderContext(false, new ApplicationDomain(null), null);
 		loader.load(url, con);
@@ -305,11 +311,22 @@ public class Scratch extends Sprite {
 				stagePane.info.name = newProjectName;
 //			}
 		}
+		
 
+		function onCallServerError(url:String, event:ErrorEvent):void {
+			Scratch.app.log(LogLevel.WARNING, 'Failed server request', {event: event, url: url});
+			if (event is SecurityErrorEvent) {
+				var urlPathStart:int = url.indexOf('/', 10);
+				var policyFileURL:String = url.substr(0, urlPathStart) + '/crossdomain.xml?cb=' + Math.random();
+				Security.loadPolicyFile(policyFileURL);
+				Scratch.app.log(LogLevel.WARNING, 'Reloading policy file', {policy: policyFileURL, initiator: url});
+			}
+		}
 		function handleError(e:ErrorEvent):void {
 			jsThrowError('Failed to load SBX: ' + e.toString());
 			DialogBox.notify('错误','加载项目失败', stage);
-			lp.setProgress(1);
+			removeLoadProgressBox();
+			onCallServerError(url, e);
 		}
 
 		var fileExtension:String = url.substr(url.lastIndexOf('.')).toLowerCase();
@@ -384,6 +401,18 @@ public class Scratch extends Sprite {
 		app.setProjectName('');
 		runtime.installProjectFromData(sbxData);
 	}
+	
+	public function getTime():String { 
+		var nowdate:Date = new Date(); 
+		var year:Number = nowdate.getFullYear(); 
+		var month:Number = nowdate.getMonth()+1; 
+		var date:Number = nowdate.getDate(); 
+		var day:Number = nowdate.getDay(); 
+		var hour:Number = nowdate.getHours(); 
+		var minute:Number = nowdate.getMinutes(); 
+		var second:Number = nowdate.getSeconds(); 
+		return(year+"-"+month+"-"+date+" "+hour+":"+minute+":"+second);
+	} 
 
 	protected function initTopBarPart():void {
 		topBarPart = new TopBarPart(this);
@@ -612,7 +641,11 @@ public class Scratch extends Sprite {
 	}
 
 	public function projectName():String {
-		return stagePart.projectName();
+		if(stagePart.projectName().length==0){
+			return stagePart.projectName();
+		}else{
+			return stagePane.info.name;
+		}
 	}
 
 	public function highlightSprites(sprites:Array):void {
@@ -1142,7 +1175,12 @@ public class Scratch extends Sprite {
 			m.addItem('停止录像', runtime.stopVideo);
 		} else {
 			if(user_token!=""){
-				m.addItem('录像|交作业', runtime.exportToVideo);
+				if(user_class_id=="0"){
+					m.addItem('录像|上传分享', runtime.exportToVideo);
+				}else{
+					m.addItem('录像|交作业', runtime.exportToVideo);
+				}
+
 			}else{
 				m.addItem('录像', runtime.exportToVideo);
 			}
@@ -1207,33 +1245,60 @@ public class Scratch extends Sprite {
 	//保存截屏
 	private function saveScreenshot() : void
 	{
-		
-		var data:BitmapData = new BitmapData(this.width,this.height,true,0);
-		data.draw(this);
-		
 		function ask(dialog:DialogBox):void {
-			
-			var jpg_encoder:* = new JPGEncoder(50);
-			var jpg:* = jpg_encoder.encode(data);	
-			
 			var ask:String = dialog.getField('问题描述');
-			var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=2&filename="+ask;
-			var requestData:URLRequest = new URLRequest(url); 
-			var loader:URLLoader = new URLLoader(); 
-			
-			requestData.data = jpg;
-			requestData.method = URLRequestMethod.POST;
-			requestData.contentType = "application/octet-stream"; 
-			loader.load(requestData);
-			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-				var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-				if(response.result==1){
-					Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response.msg});
-					DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
-				}else{
-					DialogBox.close("反馈失败",response.msg,null,"关闭");
+			if(ask==''){
+				DialogBox.close("提示","还没有输入内容",null,"关闭");
+			}else{
+				externalCall("fileUploading",null,2);
+				var data:BitmapData = new BitmapData(this.width,this.height,true,0);
+				data.draw(this);
+				var jpg_encoder:* = new JPGEncoder(50);
+				var jpg:* = jpg_encoder.encode(data);	
+				
+				var posturl:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+"|"+ask+".jpg?append&position=0";
+				var url:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+"|"+ask+".jpg";
+				var requestData:URLRequest = new URLRequest(posturl); 
+				var loader:URLLoader = new URLLoader(); 
+				requestData.data = jpg;
+				requestData.method = URLRequestMethod.POST;
+				requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache"), new URLRequestHeader("x-oss-object-acl", "public-read-write")];
+				loader.dataFormat = URLLoaderDataFormat.TEXT;
+				var loader:* = new URLLoader();
+				loader.dataFormat = URLLoaderDataFormat.BINARY;
+				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
+					externalCall("fileUploaded",null,2,url);
+				});
+				var onError = function (e:Event) : void
+				{
+					jsThrowError('Failed upload: ' + e.toString());
+					DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试", app.stage, saveScreenshot, null, null, true);
 				}
-			});
+				loader.addEventListener(ErrorEvent.ERROR, onError);
+				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
+				loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
+				loader.addEventListener(AsyncErrorEvent.ASYNC_ERROR, onError);
+				
+				loader.load(requestData);
+				
+//				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=2&filename="+ask;
+//				var requestData:URLRequest = new URLRequest(url); 
+//				var loader:URLLoader = new URLLoader(); 
+//				
+//				requestData.data = jpg;
+//				requestData.method = URLRequestMethod.POST;
+//				requestData.contentType = "application/octet-stream"; 
+//				loader.load(requestData);
+//				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
+//					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+//					if(response.result==1){
+//						Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response.msg});
+//						DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
+//					}else{
+//						DialogBox.close("反馈失败",response.msg,null,"关闭");
+//					}
+//				});
+			}
 			
 		}
 		
@@ -1298,34 +1363,57 @@ public class Scratch extends Sprite {
 		d.showOnStage(app.stage);
 		
 	}
+		
 	//保存项目
 	public function saveProject(fromJS:Boolean = false, saveCallback:Function = null):void{
-		
 		Scratch.app.log(LogLevel.TRACK, "正在上传项目", {user_id: app.user_id, user_token: app.user_token,user_class_id:user_class_id, projname: projectName()});
-		
+		externalCall("fileUploading",null,1);
 		function squeakSoundsConverted():void {
 			scriptsPane.saveScripts(false);
 			var projectType:String = extensionManager.hasExperimentalExtensions() ? '.sbx' : '.sb2';
 			var defaultName:String = StringUtil.trim(projectName());
 			defaultName = ((defaultName.length > 0) ? defaultName : 'project') + projectType;
 			var zipData:ByteArray = projIO.encodeProjectAsZipFile(stagePane);
-			//TODO 先判断项目名是否存在
-			var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=1&filename="+projectName();
-			var requestData:URLRequest = new URLRequest(url); 
+			if(zipData.length==0){
+				DialogBox.close("提示","这个项目什么都没有诶",null,"关闭");
+				return;
+			}
+//			var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=1&filename="+projectName();
+//			var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName+"?append&position=0";
+//			var requestData:URLRequest = new URLRequest(url); 
+//			var loader:URLLoader = new URLLoader(); 
+//			requestData.data = zipData;
+//			requestData.method = URLRequestMethod.POST;
+//			requestData.contentType = "application/octet-stream"; 
+//			loader.load(requestData);
+			
+			var posturl:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName+"?append&position=0";
+			var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName;
+			var requestData:URLRequest = new URLRequest(posturl); 
 			var loader:URLLoader = new URLLoader(); 
 			requestData.data = zipData;
 			requestData.method = URLRequestMethod.POST;
-			requestData.contentType = "application/octet-stream"; 
-			loader.load(requestData);
+			requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache"), new URLRequestHeader("x-oss-object-acl", "public-read-write")];
+			loader.dataFormat = URLLoaderDataFormat.TEXT;
+			var loader:* = new URLLoader();
+			loader.dataFormat = URLLoaderDataFormat.BINARY;
+			
 			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-				var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-				if(response.result==1){
-					Scratch.app.log(LogLevel.INFO,'上传项目完成',{data:response.msg});
-					DialogBox.close("保存成功","已经保存到服务器啦~",null,"关闭");
-				}else{
-					DialogBox.close("保存失败",response.error_msg,null,"关闭");
-				}
+				externalCall("fileUploaded",null,1,url);
+//				DialogBox.close("保存成功","已经保存到服务器啦~",null,"关闭");
 			});
+			
+			var onError = function (e:Event) : void
+			{
+				jsThrowError('Failed upload: ' + e.toString());
+				DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试", app.stage, saveProject, null, null, true);
+			}
+			loader.addEventListener(ErrorEvent.ERROR, onError);
+			loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
+			loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
+			loader.addEventListener(AsyncErrorEvent.ASYNC_ERROR, onError);
+			
+			loader.load(requestData);
 		}
 		
 		function fileSaved(e:Event):void {

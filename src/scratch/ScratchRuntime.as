@@ -5,8 +5,10 @@ import assets.Resources;
 import blocks.Block;
 import blocks.BlockArg;
 
-import com.rainbowcreatures.swf.*;
 import by.blooddy.crypto.serialization.JSON;
+
+import com.rainbowcreatures.swf.*;
+
 import extensions.ExtensionManager;
 
 import flash.display.*;
@@ -408,7 +410,7 @@ public class ScratchRuntime {
 		baFlvEncoder.start();
 		//waitAndStart();
 		//		加载编码器	
-		this.myEncoder.load("mp4/");
+		this.myEncoder.load(new Server().URLs['OSS']+"/scratch/");
 
 	}
 	//录制视频
@@ -506,30 +508,59 @@ public class ScratchRuntime {
 		{
 			video = myEncoder.getVideo();
 			function saveAndUploadFile():void {
-				
-				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&user_class_id="+app.user_class_id+"&type=0&filename="+app.projectName();
-				var requestData:URLRequest = new URLRequest(url); 
+				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
+				app.externalCall("fileUploading",null,0);
+				var posturl:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+app.getTime()+"|"+ app.projectName() +".mp4?append&position=0";
+				var url:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+app.getTime()+"|"+ app.projectName() +".mp4";
+				var requestData:URLRequest = new URLRequest(posturl); 
 				var loader:URLLoader = new URLLoader(); 
 				requestData.data = video;
 				requestData.method = URLRequestMethod.POST;
-				requestData.contentType = "application/octet-stream"; 
-				loader.load(requestData);
+				requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache"), new URLRequestHeader("x-oss-object-acl", "public-read-write")];
+				loader.dataFormat = URLLoaderDataFormat.TEXT;
+				var loader:* = new URLLoader();
+				loader.dataFormat = URLLoaderDataFormat.BINARY;
+				
 				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-					if(response.error_msg==""){
-						Scratch.app.log(LogLevel.INFO,'上传录像完成',{data:response.msg});
-						var specEditor:SharingSpecEditor = new SharingSpecEditor(response.url);
-						DialogBox.close("分享你的视频",null,specEditor,"关闭");
-					}else{
-						DialogBox.close("上传录像失败",response.error_msg,null,"关闭");
-					}
+					app.externalCall("fileUploaded",null,0,url);
+//					DialogBox.close("上传成功","作业已经交上啦",null,"关闭");
 				});
 				
-				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
+				var onError = function (e:Event) : void
+				{
+					app.jsThrowError('Failed upload: ' + e.toString());
+					DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试", app.stage, saveAndUploadFile, null, null, true);
+				}
+				loader.addEventListener(ErrorEvent.ERROR, onError);
+				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
+				loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
+				loader.addEventListener(AsyncErrorEvent.ASYNC_ERROR, onError);
 				
-				var file:FileReference = new FileReference();
-				file.save(video, app.projectName()+".mp4");
-			    releaseVideo(false);
+				loader.load(requestData);
+				
+//				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&user_class_id="+app.user_class_id+"&type=0&filename="+app.projectName();
+//				var requestData:URLRequest = new URLRequest(url); 
+//				var loader:URLLoader = new URLLoader(); 
+//				requestData.data = video;
+//				requestData.method = URLRequestMethod.POST;
+//				requestData.contentType = "application/octet-stream"; 
+//				loader.load(requestData);
+//				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
+//					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
+//					if(response.error_msg==""){
+//						Scratch.app.log(LogLevel.INFO,'上传录像完成',{data:response.msg});
+//						var specEditor:SharingSpecEditor = new SharingSpecEditor(response.url);
+//						DialogBox.close("分享你的视频",null,specEditor,"关闭");
+//					}else{
+//						DialogBox.close("上传录像失败",response.error_msg,null,"关闭");
+//					}
+//				});
+				
+				
+				
+//				var file:FileReference = new FileReference();
+//				file.save(video, app.projectName()+".mp4");
+//			    releaseVideo(false);
 	        }
 			function saveFile():void {
 				var file:FileReference = new FileReference();
@@ -543,7 +574,7 @@ public class ScratchRuntime {
 			if(app.user_token==""){
 				DialogBox.close("录制完成","点击按钮下载",null,"下载",app.stage,saveFile,releaseVideo,null,true);
 			}else{
-				DialogBox.close("录制完成","点击按钮保存到服务器并下载",null,"保存并下载",app.stage,saveAndUploadFile,releaseVideo,null,true);
+				DialogBox.close("录制完成","点击按钮提交上传到服务器",null,"提交",app.stage,saveAndUploadFile,releaseVideo,null,true);
 			}
 			
 		}

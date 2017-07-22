@@ -109,7 +109,7 @@ public class Server implements IServer {
 		if (event is SecurityErrorEvent) {
 			var urlPathStart:int = url.indexOf('/', 10);
 			
-			//安全策略，解决无法从本地载入
+			//安全策略
 			var policyFileURL:String = url.substr(0, urlPathStart) + '/crossdomain.xml?cb=' + Math.random();
 //			var policyFileURL:String ='crossdomain.xml?cb=' + Math.random();
 			Security.loadPolicyFile(policyFileURL);
