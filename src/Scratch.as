@@ -243,6 +243,8 @@ public class Scratch extends Sprite {
 		if(project_url!="undefined"&&project_url!=""){
 			log(LogLevel.DEBUG,'init project',{project:project_url});
 			loadSingleGithubURL(project_url);
+		}else{
+			runtime.installEmptyProject();
 		}
 		
 	}
@@ -323,10 +325,10 @@ public class Scratch extends Sprite {
 			}
 		}
 		function handleError(e:ErrorEvent):void {
+			onCallServerError(url, e);
 			jsThrowError('Failed to load SBX: ' + e.toString());
 			DialogBox.notify('错误','加载项目失败', stage);
 			removeLoadProgressBox();
-			onCallServerError(url, e);
 		}
 
 		var fileExtension:String = url.substr(url.lastIndexOf('.')).toLowerCase();
@@ -641,11 +643,7 @@ public class Scratch extends Sprite {
 	}
 
 	public function projectName():String {
-		if(stagePart.projectName().length==0){
-			return stagePart.projectName();
-		}else{
-			return stagePane.info.name;
-		}
+		return stagePart.projectName();
 	}
 
 	public function highlightSprites(sprites:Array):void {
@@ -1159,7 +1157,6 @@ public class Scratch extends Sprite {
 	protected function addFileMenuItems(b:*, m:Menu):void {
 		
 		m.addItem('从本地加载项目', runtime.selectProjectFile);
-		m.addItem('从URL加载项目',loadProject);
 		m.addItem('导出项目到本地', exportProjectToFile);
 		if(user_token!=""){
 			m.addLine();
@@ -1198,6 +1195,7 @@ public class Scratch extends Sprite {
 			m.addLine();
 			m.addItem('保存项目摘要', saveSummary);
 			m.addItem('显示版本信息', showVersionDetails);
+			m.addItem('从URL加载项目',loadProject);
 		}
 		if (b.lastEvent.shiftKey && jsEnabled) {
 			m.addLine();
@@ -1256,11 +1254,12 @@ public class Scratch extends Sprite {
 				var jpg_encoder:* = new JPGEncoder(50);
 				var jpg:* = jpg_encoder.encode(data);	
 				
-				var posturl:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+"|"+ask+".jpg?append&position=0";
-				var url:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+"|"+ask+".jpg";
+				var posturl:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+" | "+ask+".jpg?append&position=0";
+				var url:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+" | "+ask+".jpg";
 				var requestData:URLRequest = new URLRequest(posturl); 
 				var loader:URLLoader = new URLLoader(); 
 				requestData.data = jpg;
+				requestData.contentType = "image/jpeg"; 
 				requestData.method = URLRequestMethod.POST;
 				requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache"), new URLRequestHeader("x-oss-object-acl", "public-read-write")];
 				loader.dataFormat = URLLoaderDataFormat.TEXT;
@@ -1320,9 +1319,9 @@ public class Scratch extends Sprite {
 				'\n\nCopyright © 2017 MIT Media Laboratory' +
 				'\nSecondary development by Chengyu.' +
 				'\n\n', stage);
-		var _newURL:URLRequest=new URLRequest("http://www.213.name");
-		var _fangshi:String="_blank";
-		navigateToURL(_newURL,_fangshi);
+		//var _newURL:URLRequest=new URLRequest("http://www.213.name");
+		//var _fangshi:String="_blank";
+		//navigateToURL(_newURL,_fangshi);
 	}
 
 	protected function createNewProjectAndThen(callback:Function = null):void {
@@ -1392,6 +1391,7 @@ public class Scratch extends Sprite {
 			var requestData:URLRequest = new URLRequest(posturl); 
 			var loader:URLLoader = new URLLoader(); 
 			requestData.data = zipData;
+			requestData.contentType = "application/octet-stream"; 
 			requestData.method = URLRequestMethod.POST;
 			requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache"), new URLRequestHeader("x-oss-object-acl", "public-read-write")];
 			loader.dataFormat = URLLoaderDataFormat.TEXT;

@@ -510,11 +510,13 @@ public class ScratchRuntime {
 			function saveAndUploadFile():void {
 				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
 				app.externalCall("fileUploading",null,0);
-				var posturl:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+app.getTime()+"|"+ app.projectName() +".mp4?append&position=0";
-				var url:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+app.getTime()+"|"+ app.projectName() +".mp4";
+				var posturl:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+app.getTime()+" | "+ app.projectName() +".mp4?append&position=0";
+				var url:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+app.getTime()+" | "+ app.projectName() +".mp4";
 				var requestData:URLRequest = new URLRequest(posturl); 
 				var loader:URLLoader = new URLLoader(); 
 				requestData.data = video;
+				requestData.contentType = "video/mpeg4";
+				//requestData.contentType = "application/octet-stream";
 				requestData.method = URLRequestMethod.POST;
 				requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache"), new URLRequestHeader("x-oss-object-acl", "public-read-write")];
 				loader.dataFormat = URLLoaderDataFormat.TEXT;
