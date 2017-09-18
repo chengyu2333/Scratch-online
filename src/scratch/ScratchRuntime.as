@@ -147,7 +147,7 @@ public class ScratchRuntime {
 					bmd = videoFrames[videoPosition];
 					bounds = new Rectangle(0,0,bmd.width,bmd.height);
 					pixels = bmd.getPixels(bounds);
-//					videoSounds[videoPosition].position = 0;
+					videoSounds[videoPosition].position = 0;
 					try
 					{
 						this.myEncoder.addAudioFrame(videoSounds[videoPosition]);
@@ -587,7 +587,7 @@ public class ScratchRuntime {
 				try
 				{
 					myEncoder.addAudioFrame(videoSounds[videoPosition]);
-					myEncoder.addVideoFrame(videoSounds[videoPosition]);
+					myEncoder.addVideoFrame(pixels);
 				}
 				catch (error:Error)
 				{
