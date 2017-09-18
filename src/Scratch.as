@@ -312,8 +312,13 @@ public class Scratch extends Sprite {
 
 	//在线加载项目
 	private function loadSingleGithubURL(url:String):void {
+		var index:int = url.indexOf('?');
+		if (index > 0) url = url.slice(0, index);
+		index = url.lastIndexOf('/');
+		if (index > 0) url = url.slice(0, index) + escape(url.slice(index))
+		
 		log(LogLevel.DEBUG,'尝试载入网络项目',{url:url});
-		url = StringUtil.trim(unescape(url));
+//		url = StringUtil.trim(unescape(url));
 		function handleComplete(e:Event):void {
 			runtime.installProjectFromData(sbxLoader.data);
 //			if (StringUtil.trim(projectName()).length == 0) {
@@ -323,7 +328,10 @@ public class Scratch extends Sprite {
 				index = newProjectName.lastIndexOf('/');
 				if (index > 0) newProjectName = newProjectName.substr(index + 1);
 				index = newProjectName.lastIndexOf('.sbx');
-				if (index > 0) newProjectName = newProjectName.slice(0, index);
+				if (index > 0) newProjectName =newProjectName.slice(0, index);
+				newProjectName =  unescape(unescape(newProjectName));	
+				index = newProjectName.indexOf('|');
+				if(index > 0) newProjectName = newProjectName.slice(index+1);
 				setProjectName(newProjectName);
 				stagePane.info.name = newProjectName;
 //			}
@@ -1275,8 +1283,8 @@ public class Scratch extends Sprite {
 				var jpg_encoder:* = new JPGEncoder(50);
 				var jpg:* = jpg_encoder.encode(data);	
 				if(new Server().URLs['OSS']||new Server().URLs['OSS']!=""){
-					var posturl:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+" | "+ask+".jpg?append&position=0";
-					var url:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+" | "+ask+".jpg";
+					var posturl:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+escape(escape(getTime()+"|"+ask))+".jpg?append&position=0";
+					var url:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+escape(escape(getTime()+"|"+ask))+".jpg";
 				}else{
 					var posturl:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=2&filename="+projectName();
 					var url:String = "";
@@ -1304,23 +1312,6 @@ public class Scratch extends Sprite {
 				
 				loader.load(requestData);
 				
-//				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=2&filename="+ask;
-//				var requestData:URLRequest = new URLRequest(url); 
-//				var loader:URLLoader = new URLLoader(); 
-//				
-//				requestData.data = jpg;
-//				requestData.method = URLRequestMethod.POST;
-//				requestData.contentType = "application/octet-stream"; 
-//				loader.load(requestData);
-//				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-//					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-//					if(response.result==1){
-//						Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response.msg});
-//						DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
-//					}else{
-//						DialogBox.close("反馈失败",response.msg,null,"关闭");
-//					}
-//				});
 			}
 			
 		}
@@ -1392,6 +1383,21 @@ public class Scratch extends Sprite {
 		d.showOnStage(app.stage);
 		
 	}
+	
+	function myUrlEncode(str:String,code:String):String
+	{
+		var stringresult:String = "";
+//		var byte:ByteArray =new ByteArray();
+//		byte.writeMultiByte(str,code);
+//		for (var i:int; i<byte.length; i++)
+//		{
+//			stringresult +=  escape(String.fromCharCode(byte[i]));
+//		}
+		stringresult = escape(str);
+//		jsThrowError('encode: '+ stringresult + "\n");
+		
+		return stringresult;
+	}
 		
 	//保存项目
 	public function saveProject(fromJS:Boolean = false, saveCallback:Function = null):void{
@@ -1417,10 +1423,12 @@ public class Scratch extends Sprite {
 //			loader.load(requestData);
 			
 			if(new Server().URLs['OSS']||new Server().URLs['OSS']!=""){
-				var posturl:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName+"?append&position=0";
-				var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName;
+//				var posturl:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName+"?append&position=0";
+//				var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName;
+				var posturl:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+escape(escape(getTime()+"|"+defaultName))+"?append&position=0";
+				var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+escape(escape(getTime()+"|"+defaultName));
 			}else{
-				var posturl:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=1&filename="+defaultName;
+				var posturl:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=1&filename="+escape(defaultName);
 				var url:String = "";
 			}
 			
