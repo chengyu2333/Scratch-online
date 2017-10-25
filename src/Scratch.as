@@ -81,6 +81,7 @@ public class Scratch extends Sprite {
 	public var loadInProgress:Boolean;
 	public var debugOps:Boolean = false;
 	public var debugOpCmd:String = '';
+	public var mp4encode = true;
 
 	protected var autostart:Boolean;
 	private var viewedObject:ScratchObj;
@@ -221,7 +222,7 @@ public class Scratch extends Sprite {
 			if(user_class_id==""||user_class_id=="undefined"||user_class_id=="0"){
 				user_class_id="0";
 			}else{
-				DialogBox.notify('提示','您当前在作业模式下，提交的作品将作为作业上交哦~', stage);
+				//DialogBox.notify('提示','您当前在作业模式下，提交的作品将作为作业上交哦~', stage);
 			}
 		}
 		
@@ -236,8 +237,8 @@ public class Scratch extends Sprite {
 		
 		Translator.setLanguage("zh-cn");
 		languageChanged = true;
-		setProjectName('未命名');
-		stagePane.info.name = "未命名";
+		setProjectName('untitle');
+		stagePane.info.name = "untitle";
 		//初始化项目
 		var project_url:String = loaderInfo.parameters["project"];
 		if(project_url!="undefined"&&project_url!=""){
@@ -256,10 +257,24 @@ public class Scratch extends Sprite {
 	//预加载编码模块
 	private function preloadEncoder() : void
 	{
-		var url:* = new URLRequest(new Server().URLs['OSS']+"/scratch/FW_SWFBridge_ffmpeg.swf?v=24");
-		var loader:* = new Loader();
-		var con:* = new LoaderContext(false, new ApplicationDomain(null), null);
-		loader.load(url, con);
+		if(new Server().URLs['mp4']||new Server().URLs['mp4']!="null"){
+			var url:* = new URLRequest(new Server().URLs['mp4']+"FW_SWFBridge_ffmpeg.swf?v=24");
+			var loader:* = new Loader();
+			var con:* = new LoaderContext(false, new ApplicationDomain(null), null);
+			var onError = function (e:Event) : void
+			{
+				app.jsThrowError('load mp4 encode module error: ' + e.toString());
+				this.mp4encode = false;
+			}
+			loader.addEventListener(ErrorEvent.ERROR, onError);
+			loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
+			loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
+			loader.addEventListener(AsyncErrorEvent.ASYNC_ERROR, onError);
+			loader.load(url, con);
+		}else{
+			this.mp4encode = false;
+		}
+		
 		return;
 	}
 	protected function handleStartupParameters():void {
@@ -297,8 +312,13 @@ public class Scratch extends Sprite {
 
 	//在线加载项目
 	private function loadSingleGithubURL(url:String):void {
+		var index:int = url.indexOf('?');
+		if (index > 0) url = url.slice(0, index);
+		index = url.lastIndexOf('/');
+		if (index > 0) url = url.slice(0, index) + escape(url.slice(index))
+		
 		log(LogLevel.DEBUG,'尝试载入网络项目',{url:url});
-		url = StringUtil.trim(unescape(url));
+//		url = StringUtil.trim(unescape(url));
 		function handleComplete(e:Event):void {
 			runtime.installProjectFromData(sbxLoader.data);
 //			if (StringUtil.trim(projectName()).length == 0) {
@@ -308,7 +328,10 @@ public class Scratch extends Sprite {
 				index = newProjectName.lastIndexOf('/');
 				if (index > 0) newProjectName = newProjectName.substr(index + 1);
 				index = newProjectName.lastIndexOf('.sbx');
-				if (index > 0) newProjectName = newProjectName.slice(0, index);
+				if (index > 0) newProjectName =newProjectName.slice(0, index);
+				newProjectName =  unescape(unescape(newProjectName));	
+				index = newProjectName.indexOf('|');
+				if(index > 0) newProjectName = newProjectName.slice(index+1);
 				setProjectName(newProjectName);
 				stagePane.info.name = newProjectName;
 //			}
@@ -317,6 +340,7 @@ public class Scratch extends Sprite {
 
 		function onCallServerError(url:String, event:ErrorEvent):void {
 			Scratch.app.log(LogLevel.WARNING, 'Failed server request', {event: event, url: url});
+			removeLoadProgressBox();
 			if (event is SecurityErrorEvent) {
 				var urlPathStart:int = url.indexOf('/', 10);
 				var policyFileURL:String = url.substr(0, urlPathStart) + '/crossdomain.xml?cb=' + Math.random();
@@ -1129,8 +1153,12 @@ public class Scratch extends Sprite {
 	// 目录
 	//------------------------------
 	public function showHelpMenu(b:*):void {
+		
 		var m:Menu = new Menu(null,'帮助',CSS.topBarColor(),28);
-		m.addItem('关于',showAboutDialog);
+//		m.addItem('关于',showAboutDialog);
+		
+		m.addItem('查看帮助文档',showHelp);
+		
 		if(user_token!=""){
 			m.addItem('反馈',saveScreenshot);
 		}
@@ -1172,6 +1200,7 @@ public class Scratch extends Sprite {
 			m.addItem('停止录像', runtime.stopVideo);
 		} else {
 			if(user_token!=""){
+				
 				if(user_class_id=="0"){
 					m.addItem('录像|上传分享', runtime.exportToVideo);
 				}else{
@@ -1253,24 +1282,27 @@ public class Scratch extends Sprite {
 				data.draw(this);
 				var jpg_encoder:* = new JPGEncoder(50);
 				var jpg:* = jpg_encoder.encode(data);	
-				
-				var posturl:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+" | "+ask+".jpg?append&position=0";
-				var url:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+getTime()+" | "+ask+".jpg";
+				if(new Server().URLs['OSS']||new Server().URLs['OSS']!=""){
+					var posturl:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+escape(escape(getTime()+"|"+ask))+".jpg?append&position=0";
+					var url:String = new Server().URLs['OSS']+"/screenshot/"+user_id+"/"+escape(escape(getTime()+"|"+ask))+".jpg";
+				}else{
+					var posturl:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=2&filename="+projectName();
+					var url:String = "";
+				}
+					
 				var requestData:URLRequest = new URLRequest(posturl); 
-				var loader:URLLoader = new URLLoader(); 
 				requestData.data = jpg;
 				requestData.contentType = "image/jpeg"; 
 				requestData.method = URLRequestMethod.POST;
 				requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache"), new URLRequestHeader("x-oss-object-acl", "public-read-write")];
-				loader.dataFormat = URLLoaderDataFormat.TEXT;
-				var loader:* = new URLLoader();
+				var loader:URLLoader = new URLLoader();
 				loader.dataFormat = URLLoaderDataFormat.BINARY;
 				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
 					externalCall("fileUploaded",null,2,url);
 				});
 				var onError = function (e:Event) : void
 				{
-					jsThrowError('Failed upload: ' + e.toString());
+					jsThrowError('Failed upload: '+ posturl + "\n" + e.toString());
 					DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试", app.stage, saveScreenshot, null, null, true);
 				}
 				loader.addEventListener(ErrorEvent.ERROR, onError);
@@ -1280,23 +1312,6 @@ public class Scratch extends Sprite {
 				
 				loader.load(requestData);
 				
-//				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&type=2&filename="+ask;
-//				var requestData:URLRequest = new URLRequest(url); 
-//				var loader:URLLoader = new URLLoader(); 
-//				
-//				requestData.data = jpg;
-//				requestData.method = URLRequestMethod.POST;
-//				requestData.contentType = "application/octet-stream"; 
-//				loader.load(requestData);
-//				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-//					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-//					if(response.result==1){
-//						Scratch.app.log(LogLevel.INFO,'上传截图完成',{data:response.msg});
-//						DialogBox.close("反馈成功","老师看到就会回复你哦",null,"关闭");
-//					}else{
-//						DialogBox.close("反馈失败",response.msg,null,"关闭");
-//					}
-//				});
 			}
 			
 		}
@@ -1322,6 +1337,12 @@ public class Scratch extends Sprite {
 		//var _newURL:URLRequest=new URLRequest("http://www.213.name");
 		//var _fangshi:String="_blank";
 		//navigateToURL(_newURL,_fangshi);
+	}
+	
+	public function showHelp():void{
+		var _newURL:URLRequest=new URLRequest("help.html");
+		var _fangshi:String="_blank";
+		navigateToURL(_newURL,_fangshi)
 	}
 
 	protected function createNewProjectAndThen(callback:Function = null):void {
@@ -1362,6 +1383,21 @@ public class Scratch extends Sprite {
 		d.showOnStage(app.stage);
 		
 	}
+	
+	function myUrlEncode(str:String,code:String):String
+	{
+		var stringresult:String = "";
+//		var byte:ByteArray =new ByteArray();
+//		byte.writeMultiByte(str,code);
+//		for (var i:int; i<byte.length; i++)
+//		{
+//			stringresult +=  escape(String.fromCharCode(byte[i]));
+//		}
+		stringresult = escape(str);
+//		jsThrowError('encode: '+ stringresult + "\n");
+		
+		return stringresult;
+	}
 		
 	//保存项目
 	public function saveProject(fromJS:Boolean = false, saveCallback:Function = null):void{
@@ -1377,7 +1413,7 @@ public class Scratch extends Sprite {
 				DialogBox.close("提示","这个项目什么都没有诶",null,"关闭");
 				return;
 			}
-//			var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=1&filename="+projectName();
+			
 //			var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName+"?append&position=0";
 //			var requestData:URLRequest = new URLRequest(url); 
 //			var loader:URLLoader = new URLLoader(); 
@@ -1386,16 +1422,22 @@ public class Scratch extends Sprite {
 //			requestData.contentType = "application/octet-stream"; 
 //			loader.load(requestData);
 			
-			var posturl:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName+"?append&position=0";
-			var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName;
+			if(new Server().URLs['OSS']||new Server().URLs['OSS']!=""){
+//				var posturl:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName+"?append&position=0";
+//				var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+getTime()+" | "+defaultName;
+				var posturl:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+escape(escape(getTime()+"|"+defaultName))+"?append&position=0";
+				var url:String = new Server().URLs['OSS']+"/project/"+user_id+"/"+escape(escape(getTime()+"|"+defaultName));
+			}else{
+				var posturl:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+user_id+"&user_token="+user_token+"&user_class_id="+user_class_id+"&type=1&filename="+escape(defaultName);
+				var url:String = "";
+			}
+			
 			var requestData:URLRequest = new URLRequest(posturl); 
-			var loader:URLLoader = new URLLoader(); 
 			requestData.data = zipData;
 			requestData.contentType = "application/octet-stream"; 
 			requestData.method = URLRequestMethod.POST;
 			requestData.requestHeaders = [new URLRequestHeader("Cache-Control", "no-cache"), new URLRequestHeader("x-oss-object-acl", "public-read-write")];
-			loader.dataFormat = URLLoaderDataFormat.TEXT;
-			var loader:* = new URLLoader();
+			var loader:URLLoader = new URLLoader();
 			loader.dataFormat = URLLoaderDataFormat.BINARY;
 			
 			loader.addEventListener(Event.COMPLETE, function (e:Event):void {
@@ -1405,7 +1447,7 @@ public class Scratch extends Sprite {
 			
 			var onError = function (e:Event) : void
 			{
-				jsThrowError('Failed upload: ' + e.toString());
+				jsThrowError('Failed upload: '+ posturl + "\n" + e.toString());
 				DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试", app.stage, saveProject, null, null, true);
 			}
 			loader.addEventListener(ErrorEvent.ERROR, onError);

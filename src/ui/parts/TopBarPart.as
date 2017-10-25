@@ -85,7 +85,8 @@ public class TopBarPart extends UIPart {
 			var extensionDevManager:ExtensionDevManager = Scratch.app.extensionManager as ExtensionDevManager;
 			if (extensionDevManager) {
 				loadExperimentalButton = extensionDevManager.makeLoadExperimentalExtensionButton();
-				addChild(loadExperimentalButton);
+				//屏蔽加载拓展按钮
+//				addChild(loadExperimentalButton);
 			}
 		}
 	}

@@ -410,7 +410,7 @@ public class ScratchRuntime {
 		baFlvEncoder.start();
 		//waitAndStart();
 		//		加载编码器	
-		this.myEncoder.load(new Server().URLs['OSS']+"/scratch/");
+		this.myEncoder.load(new Server().URLs['mp4']);
 
 	}
 	//录制视频
@@ -510,8 +510,14 @@ public class ScratchRuntime {
 			function saveAndUploadFile():void {
 				Scratch.app.log(LogLevel.TRACK, "正在上传视频", {user_id: app.user_id, user_token: app.user_token, projname: app.stagePane.info.name});
 				app.externalCall("fileUploading",null,0);
-				var posturl:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+app.getTime()+" | "+ app.projectName() +".mp4?append&position=0";
-				var url:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+app.getTime()+" | "+ app.projectName() +".mp4";
+				if(new Server().URLs['OSS']&&new Server().URLs['OSS']!=""){
+					var posturl:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+ escape(escape(app.getTime()+"|"+app.projectName())) +".mp4?append&position=0";
+					var url:String = new Server().URLs['OSS']+"/video/"+app.user_id+"/"+ escape(escape(app.getTime()+"|"+app.projectName())) +".mp4";
+				}else{
+					var posturl:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&user_class_id="+app.user_class_id+"&type=0&filename="+escape(app.projectName());
+					var url:String = "";
+				}
+				
 				var requestData:URLRequest = new URLRequest(posturl); 
 				var loader:URLLoader = new URLLoader(); 
 				requestData.data = video;
@@ -531,7 +537,7 @@ public class ScratchRuntime {
 				var onError = function (e:Event) : void
 				{
 					app.jsThrowError('Failed upload: ' + e.toString());
-					DialogBox.close("错误", "请检查你的网络链接并重试\n"+e, null, "重试", app.stage, saveAndUploadFile, null, null, true);
+					DialogBox.close("错误", "请重试\n"+e, null, "重试", app.stage, saveAndUploadFile, null, null, true);
 				}
 				loader.addEventListener(ErrorEvent.ERROR, onError);
 				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
@@ -540,29 +546,6 @@ public class ScratchRuntime {
 				
 				loader.load(requestData);
 				
-//				var url:String = new Server().URLs['siteAPI']+"?r=api/upload&user_id="+app.user_id+"&user_token="+app.user_token+"&user_class_id="+app.user_class_id+"&type=0&filename="+app.projectName();
-//				var requestData:URLRequest = new URLRequest(url); 
-//				var loader:URLLoader = new URLLoader(); 
-//				requestData.data = video;
-//				requestData.method = URLRequestMethod.POST;
-//				requestData.contentType = "application/octet-stream"; 
-//				loader.load(requestData);
-//				loader.addEventListener(Event.COMPLETE, function (e:Event):void {
-//					var response:* = by.blooddy.crypto.serialization.JSON.decode(loader.data);
-//					if(response.error_msg==""){
-//						Scratch.app.log(LogLevel.INFO,'上传录像完成',{data:response.msg});
-//						var specEditor:SharingSpecEditor = new SharingSpecEditor(response.url);
-//						DialogBox.close("分享你的视频",null,specEditor,"关闭");
-//					}else{
-//						DialogBox.close("上传录像失败",response.error_msg,null,"关闭");
-//					}
-//				});
-				
-				
-				
-//				var file:FileReference = new FileReference();
-//				file.save(video, app.projectName()+".mp4");
-//			    releaseVideo(false);
 	        }
 			function saveFile():void {
 				var file:FileReference = new FileReference();
@@ -594,6 +577,7 @@ public class ScratchRuntime {
 				if (videoPosition>=videoFrames.length) {
 					break;
 				}
+				
 				//MP4编码
 				bmd = this.videoFrames[this.videoPosition];
 				bounds = new Rectangle(0, 0, bmd.width, bmd.height);
@@ -612,7 +596,8 @@ public class ScratchRuntime {
 				}
 				//flv编码
 				//baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
-				
+
+					
 				videoFrames[videoPosition]=null;
 				videoSounds[videoPosition]=null;
 				videoPosition++;

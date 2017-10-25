@@ -146,6 +146,7 @@ public class DialogBox extends Sprite {
 		}
 		
 		if(height>0){
+			
 			var f:TextField = makeMultilineField(width,height);
 		}else{
 			var f:TextField = makeField(width);
@@ -347,7 +348,6 @@ public class DialogBox extends Sprite {
 			}
 			field.x = fieldX;
 			field.y = fieldY + 1;
-			fieldY += heightPerField;
 			//fieldY += heightPerField;
 			fieldY += label.height+10;
 		}
@@ -367,7 +367,8 @@ public class DialogBox extends Sprite {
 			}
 			ib.x = fieldX - 2;
 			ib.y = fieldY + 5;
-			fieldY += heightPerField;
+//			fieldY += heightPerField;
+			fieldY += label.height+10;
 		}
 		// text lines
 		for each (var line:TextField in textLines) {
@@ -407,14 +408,15 @@ public class DialogBox extends Sprite {
 			if (r[0] != null) maxLabelWidth = Math.max(maxLabelWidth, r[0].width);
 			maxFieldWidth = Math.max(maxFieldWidth, r[1].width);
 //			h += heightPerField;
-			h += r[1].height+10;
+			h += r[1].height+5;
 		}
 		// boolean fields
 		for (i = 0; i < booleanLabelsAndFields.length; i++) {
 			r = booleanLabelsAndFields[i];
 			if (r[0] != null) maxLabelWidth = Math.max(maxLabelWidth, r[0].width);
 			maxFieldWidth = Math.max(maxFieldWidth, r[1].width);
-			h += heightPerField;
+//			h += heightPerField;
+			h += r[1].height+5;
 		}
 		w = Math.max(w, maxLabelWidth + maxFieldWidth + 5);
 		// widget
