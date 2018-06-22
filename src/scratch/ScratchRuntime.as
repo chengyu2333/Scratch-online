@@ -80,7 +80,7 @@ public class ScratchRuntime {
 	// Running and stopping
 	//------------------------------
 
-	public function stepRuntime():void {
+		public function stepRuntime():void {
 		var bmd:BitmapData;
 		var bounds:Rectangle;
 		var pixels:ByteArray;
@@ -97,6 +97,7 @@ public class ScratchRuntime {
 			while (t>videoSounds.length/videoFramerate+1/videoFramerate) {
 				saveSound();
 			}
+			//count down 
 			var count:int = 3;
 			if (tR>=3.75){
 				ready = ReadyLabel.READY;
@@ -119,9 +120,9 @@ public class ScratchRuntime {
 				app.refreshStagePart();
 			}
 		}
-		if (recording) { // Recording a YouTube video?
+		if (recording) {
 			var t:Number = getTimer()*.001-videoSeconds;
-//			低质量录像
+			//			低质量录像
 			//If, based on time and framerate, the current frame needs to be in the video, capture the frame.
 			//Will always be true if framerate is 30, as every frame is captured.
 			if (t>videoSounds.length/videoFramerate+1/videoFramerate) {
@@ -129,8 +130,7 @@ public class ScratchRuntime {
 				//saves visual frame to frames and sound clip to sounds
 				saveFrame();
 				app.updateRecordingTools(t);
-			}
-			else {
+			}else {
 				//Will only run in low quality or full editor mode, when this frame isn't captured for video
 				//To reduce lag in low quality mode and full editor mode, video frames are only written
 				//to the file if a new frame isn't being captured and the total number of frames captured so far
@@ -141,6 +141,8 @@ public class ScratchRuntime {
 					
 //					baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
 					//forget about frame just written
+					//						Scratch.app.log(LogLevel.TRACK, "low video length",{videos: videoFrames, position:videoPosition})
+					//						Scratch.app.log(LogLevel.TRACK, "low sounds length",{sounds: videoSounds, position:videoPosition});
 					
 					bmd = videoFrames[videoPosition];
 					bounds = new Rectangle(0,0,bmd.width,bmd.height);
@@ -148,21 +150,21 @@ public class ScratchRuntime {
 					videoSounds[videoPosition].position = 0;
 					try
 					{
-						this.myEncoder.addAudioFrame(videoSounds[videoPosition]);
-						this.myEncoder.addVideoFrame(pixels);
+						this.framesAudioData.push(videoSounds[videoPosition]);
+						this.framesVideoData.push(pixels);
 					}
 					catch(error:Error)
 					{
 						DialogBox.close("runtime error",error.message,null,"ok",app.stage,null,null,null,false);
 						
 					}
-						
+					
 					videoFrames[videoPosition]=null;
 					videoSounds[videoPosition]=null;
 					videoPosition++;
 				}
 			}
-//			高质量录像
+			//			高质量录像
 			//For a high quality video, every frame is immediately written to the video file
 			//after being captured, to reduce memory.
 			if (videoFrames.length>videoPosition && videoFramerate==30.0) {
@@ -170,14 +172,16 @@ public class ScratchRuntime {
 //				baFlvEncoder.addFrame(videoFrames[videoPosition],videoSounds[videoPosition]);
 				//forget about frame just written
 				
+				Scratch.app.log(LogLevel.TRACK, "high sounds length",{sounds: videoSounds});
+				
 				bmd = videoFrames[videoPosition];
 				bounds = new Rectangle(0,0,bmd.width,bmd.height);
 				pixels = bmd.getPixels(bounds);
 				videoSounds[videoPosition].position = 0;
 				try
 				{
-					this.myEncoder.addAudioFrame(videoSounds[videoPosition]);
-					this.myEncoder.addVideoFrame(pixels);
+					this.framesAudioData.push(videoSounds[videoPosition]);
+					this.framesVideoData.push(pixels);
 				}
 				catch(error:Error)
 				{
@@ -191,10 +195,10 @@ public class ScratchRuntime {
 		}
 		app.extensionManager.step();
 		if (motionDetector) motionDetector.step(); // Video motion detection
-
+		
 		// Step the stage, sprites, and watchers
 		app.stagePane.step(this);
-
+		
 		// run scripts and commit any pen strokes
 		processEdgeTriggeredHats();
 		interp.stepThreads();
